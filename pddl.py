@@ -59,7 +59,7 @@ def print_problem(name, automata):
 
         init = []
         for automaton_idx, a in enumerate(automata):
-            init.append(f"(state-a{automaton_idx} s-a{automaton_idx}-{a.get_initial_state_str()})")
+            init.append(f"(state-a{automaton_idx} s-a{automaton_idx}-{a.get_initial_node_str()})")
             for key, adj_list in a.graph.items():
                 current_node = get_state_name(automaton_idx, key)
                 for edge in adj_list:

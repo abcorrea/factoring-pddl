@@ -6,7 +6,7 @@ from utils import *
 class Graph:
     def __init__(self):
         self.graph = {}
-        self.initial_state = None
+        self.initial_node = None
 
     def add_node(self, node):
         if node not in self.graph:
@@ -16,12 +16,12 @@ class Graph:
         if node1 in self.graph:
             self.graph[node1].append((node2, label))
 
-    def set_initial_state(self, node):
+    def set_initial_node(self, node):
         assert node in self.graph.keys()
-        self.initial_state = node
+        self.initial_node = node
 
-    def get_initial_state_str(self):
-        return str(self.initial_state)
+    def get_initial_node_str(self):
+        return str(self.initial_node)
 
 def compute_remainder_table(n):
     table = [None]*n
@@ -72,7 +72,7 @@ def create_prime_automaton(z, p):
             if ((i * j) % p) == z_remainder:
                 g.add_edge((j, i), 'T', 'hashtag')
 
-    g.set_initial_state(0)
+    g.set_initial_node(0)
 
     return g
 
@@ -90,14 +90,14 @@ def create_trivial_factor_automaton(z):
     g.add_node('y1')
     g.add_node('y2')
 
-    g.set_initial_state('x0')
+    g.set_initial_node('x0')
 
-    # In the first state, we need to consume at least
+    # In the first node, we need to consume at least
     # one '1', otherwise we are just adding trailing 0s
     g.add_edge('x0', 'x0', '0')
     g.add_edge('x0', 'x1', '1')
 
-    # When we move to the next state, we need
+    # When we move to the next node, we need
     # to consume at least a 0 or an 1. In other words,
     # we cannot consume #
     g.add_edge('x1', 'x2', '0')
@@ -117,7 +117,7 @@ def create_trivial_factor_automaton(z):
     ## Second part
     g.add_edge('y1', 'y2', '0')
     g.add_edge('y1', 'y2', '1')
-    ## Third part, but now we go to accepting state T
+    ## Third part, but now we go to accepting node T
     ## once we read the hashtag token
     g.add_edge('y2', 'y2', '0')
     g.add_edge('y2', 'y2', '1')
@@ -125,12 +125,36 @@ def create_trivial_factor_automaton(z):
 
     return g
 
+def create_length_automaton(z):
+    # We know that |x| + |y| = |z|
+    ## TODO or should it be |z| + 1?
+
+    g = Graph()
+    g.add_node('T')
+    bits = z.bit_length()+2
+    for i in range(bits):
+        g.add_node(i)
+        if i == 0:
+            g.add_edge(i, i, '0')
+            g.add_edge(i, i+1, '1')
+            g.add_edge(i, i, 'hashtag')
+        elif i == bits-1:
+            g.add_edge(i, 'T', 'hashtag')
+        else:
+            g.add_edge(i, i+1, '0')
+            g.add_edge(i, i+1, '1')
+            g.add_edge(i, i, 'hashtag')
+
+    g.set_initial_node(0)
+    return g
+
+
 def main():
     args = parse_arguments()
 
     z = args.z
     candidate_primes = find_primes(2*z)
-    print(f"There are %d primes up to {z}: {candidate_primes}" % len(candidate_primes))
+    print(f"There are %d primes up to {z}." % len(candidate_primes))
 
     primes = get_primes(candidate_primes, z)
 
@@ -138,6 +162,7 @@ def main():
     for p in primes:
         automata.append(create_prime_automaton(z, p))
     automata.append(create_trivial_factor_automaton(z))
+    automata.append(create_length_automaton(z))
 
     print_domain('domain.pddl', automata)
     print_problem('problem.pddl', automata)
