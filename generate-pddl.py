@@ -35,8 +35,8 @@ def get_primes(candidate_primes, z):
     primes = []
     product = 1
     idx = 0
-    upper_bound = 2 ** (z.bit_length() + 1)
-    while product < upper_bound:
+    upper_bound = 2 ** (z.bit_length())
+    while product <= upper_bound:
         primes.append(candidate_primes[idx])
         product = product * primes[-1]
         idx = idx + 1
@@ -108,7 +108,7 @@ def create_trivial_factor_automaton(z):
     # and move to y.
     g.add_edge('x2', 'x2', '0')
     g.add_edge('x2', 'x2', '1')
-    g.add_edge('x2', 'y1', 'hashtag')
+    g.add_edge('x2', 'y0', 'hashtag')
 
     # Same idea for y
     ## First part
@@ -140,6 +140,8 @@ def create_length_automaton(z):
             g.add_edge(i, i, 'hashtag')
         elif i == bits-1:
             g.add_edge(i, 'T', 'hashtag')
+        elif i == bits-2:
+            g.add_edge(i, 'T', 'hashtag')
         else:
             g.add_edge(i, i+1, '0')
             g.add_edge(i, i+1, '1')
@@ -153,7 +155,7 @@ def main():
     args = parse_arguments()
 
     z = args.z
-    candidate_primes = find_primes(2*z)
+    candidate_primes = find_primes(z)
     print(f"There are %d primes up to {z}." % len(candidate_primes))
 
     primes = get_primes(candidate_primes, z)
