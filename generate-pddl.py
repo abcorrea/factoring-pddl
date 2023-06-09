@@ -6,6 +6,7 @@ from utils import *
 class Graph:
     def __init__(self):
         self.graph = {}
+        self.initial_state = None
 
     def add_node(self, node):
         if node not in self.graph:
@@ -14,6 +15,13 @@ class Graph:
     def add_edge(self, node1, node2, label):
         if node1 in self.graph:
             self.graph[node1].append((node2, label))
+
+    def set_initial_state(self, node):
+        assert node in self.graph.keys()
+        self.initial_state = node
+
+    def get_initial_state_str(self):
+        return str(self.initial_state)
 
 def compute_remainder_table(n):
     table = [None]*n
@@ -36,7 +44,7 @@ def get_primes(candidate_primes, z):
     print(f"Product of selected primes: {product}")
     return primes
 
-def create_automaton(z, p):
+def create_prime_automaton(z, p):
     z_remainder = z % p
     table = compute_remainder_table(p)
     g = Graph()
@@ -64,6 +72,57 @@ def create_automaton(z, p):
             if ((i * j) % p) == z_remainder:
                 g.add_edge((j, i), 'T', 'hashtag')
 
+    g.set_initial_state(0)
+
+    return g
+
+
+def create_trivial_factor_automaton(z):
+
+    print("Creating automaton to forbid factorization z = 1*z.")
+    # Forbids that factors are 1 and z
+    g = Graph()
+    g.add_node('T')
+    g.add_node('x0')
+    g.add_node('x1')
+    g.add_node('x2')
+    g.add_node('y0')
+    g.add_node('y1')
+    g.add_node('y2')
+
+    g.set_initial_state('x0')
+
+    # In the first state, we need to consume at least
+    # one '1', otherwise we are just adding trailing 0s
+    g.add_edge('x0', 'x0', '0')
+    g.add_edge('x0', 'x1', '1')
+
+    # When we move to the next state, we need
+    # to consume at least a 0 or an 1. In other words,
+    # we cannot consume #
+    g.add_edge('x1', 'x2', '0')
+    g.add_edge('x1', 'x2', '1')
+
+    # Once we reach x2, we know that x != 1. So we can
+    # either consume more digits or end the word x here
+    # and move to y.
+    g.add_edge('x2', 'x2', '0')
+    g.add_edge('x2', 'x2', '1')
+    g.add_edge('x2', 'y1', 'hashtag')
+
+    # Same idea for y
+    ## First part
+    g.add_edge('y0', 'y0', '0')
+    g.add_edge('y0', 'y1', '1')
+    ## Second part
+    g.add_edge('y1', 'y2', '0')
+    g.add_edge('y1', 'y2', '1')
+    ## Third part, but now we go to accepting state T
+    ## once we read the hashtag token
+    g.add_edge('y2', 'y2', '0')
+    g.add_edge('y2', 'y2', '1')
+    g.add_edge('y2', 'T', 'hashtag')
+
     return g
 
 def main():
@@ -77,9 +136,10 @@ def main():
 
     automata = []
     for p in primes:
-        automata.append(create_automaton(z, p))
+        automata.append(create_prime_automaton(z, p))
+    automata.append(create_trivial_factor_automaton(z))
 
-    print_domain('domain.pddl', primes)
+    print_domain('domain.pddl', automata)
     print_problem('problem.pddl', automata)
 
 

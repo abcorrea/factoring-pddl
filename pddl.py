@@ -1,9 +1,9 @@
-def print_domain(name, primes):
+def print_domain(name, automata):
     # Generate PDDL domain
     with open(name, 'w') as f:
         print('(define (domain factoring)', file=f)
         preds = []
-        for i in range(len(primes)):
+        for i in range(len(automata)):
             preds.append(f'(state-a{i} ?state-a{i})')
             for token in ['0', '1', 'hashtag']:
                 preds.append(f'(transition-consume{token}-a{i} ?old-state-a{i} ?new-state-a{i})')
@@ -11,7 +11,7 @@ def print_domain(name, primes):
         print('\t(:predicates \n\t\t{})'.format('\n\t\t'.join(preds)), file=f)
 
         params = []
-        for i in range(len(primes)):
+        for i in range(len(automata)):
             params.append('?old-state-a'+str(i))
             params.append('?new-state-a'+str(i))
 
@@ -20,14 +20,14 @@ def print_domain(name, primes):
             print('\t:parameters ({})'.format(' '.join(params)), file=f)
 
             precond = []
-            for i in range(len(primes)):
+            for i in range(len(automata)):
                 precond.append(f'(state-a{i} ?old-state-a{i})')
                 precond.append(f'(transition-consume{token}-a{i} ?old-state-a{i} ?new-state-a{i})')
             precond.sort()
             print('\t:precondition (and \n\t\t{})'.format('\n\t\t'.join(precond)), file=f)
 
             effs = []
-            for i in range(len(primes)):
+            for i in range(len(automata)):
                 effs.append(f'(not (state-a{i} ?old-state-a{i}))')
                 effs.append(f'(state-a{i} ?new-state-a{i})')
             effs.sort()
@@ -59,7 +59,7 @@ def print_problem(name, automata):
 
         init = []
         for automaton_idx, a in enumerate(automata):
-            init.append(f"(state-a{automaton_idx} s-a{automaton_idx}-0)")
+            init.append(f"(state-a{automaton_idx} s-a{automaton_idx}-{a.get_initial_state_str()})")
             for key, adj_list in a.graph.items():
                 current_node = get_state_name(automaton_idx, key)
                 for edge in adj_list:
